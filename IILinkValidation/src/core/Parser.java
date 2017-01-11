@@ -1,6 +1,8 @@
 package core;
 
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.jena.rdf.model.InfModel;
 import org.apache.jena.rdf.model.Model;
@@ -20,6 +22,19 @@ public class Parser {
 	 * @param rdfPath1
 	 * @param rdfPath2
 	 */
+	
+	public static List<String> listLinksSameAs = new ArrayList<String>();
+	
+	public void sameAsFinder(String links){
+		String linkSameAs = "";
+		String comp = "sameAs";
+		if (links.contains(comp)){
+			linkSameAs = links;
+			listLinksSameAs.add(linkSameAs);
+		}
+	
+	}
+	
 	public void readOWL(String owlPath,String rdfPath1,String rdfPath2)
 	{
 		Model schema = FileManager.get().loadModel(owlPath);
@@ -29,7 +44,15 @@ public class Parser {
 		reasoner = reasoner.bindSchema(schema);
 		//InfModel infmodel = ModelFactory.createInfModel(reasoner, data1,data2);
 		InfModel infmodel = ModelFactory.createInfModel(reasoner, data1);
-		infmodel.listStatements().forEachRemaining(s->System.out.println(s.toString()));;
+		//infmodel.samePrefixMappingAs(arg0)
+		infmodel.listStatements().forEachRemaining(s->sameAsFinder(s.toString()));
+		//infmodel.listStatements().forEachRemaining(sd->System.out.println(sd.toString()));
+		
+		for (String line: listLinksSameAs){
+			System.out.println(line);	
+		}
+		
+		
 	}
 	
 	/**
