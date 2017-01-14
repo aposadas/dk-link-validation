@@ -41,7 +41,7 @@ public class Parser {
 		StringWrapper stringWrapper1 = new JaroWinkler().prepare(uri1);
 		StringWrapper stringWrapper2 = new JaroWinkler().prepare(uri2);
 
-		double similarityScore = new JaroWinkler().score(uri1,uri2);
+		double similarityScore = new JaroWinkler().score(stringWrapper1, stringWrapper2);
 //		System.out.println("score: " + similarityScore);
 //		String scoreSimilarityExp = new JaroWinkler().explainScore(uri1,uri2);
 //		System.out.println("Explain score: " + scoreSimilarityExp);
@@ -142,7 +142,7 @@ public class Parser {
 		String uri1 = "http://www.okkam.org/oaie/restaurant1-Restaurant0'";
 		String uri2 = "http://www.okkam.org/oaie/restaurant2-Restaurant0";
 
-		double similarityScore = getSimilarityScore(uri1, uri2);
+		double similarityScore = parser.getSimilarityScore(uri1, uri2);
 		System.out.println("Similarity score = " + similarityScore);
 	}
 }
