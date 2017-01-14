@@ -23,6 +23,9 @@ import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.model.OWLOntologyCreationException;
 import org.semanticweb.owlapi.model.OWLOntologyManager;
 
+import com.wcohen.ss.expt.MatchData;
+import com.wcohen.ss.api.*;
+import com.wcohen.ss.*;
 
 
 
@@ -47,6 +50,17 @@ public class Parser {
 		}
 	
 	}
+	
+	public static double getSimilarityScore (String uri1, String uri2){
+		double scoreSimilarity  = 0;
+		 StringWrapper stringWrapper1 = new JaroWinkler().prepare(uri1);
+		 StringWrapper stringWrapper2 = new JaroWinkler().prepare(uri2); 
+		 scoreSimilarity = new JaroWinkler().score(uri1,uri2);
+		 System.out.println("score: " + scoreSimilarity);
+		return  scoreSimilarity;
+	}
+	
+	
 	
 	public void readOWL(String owl1,String owl2, String owl3,String rdfPath1,String rdfPath2)
 	{
@@ -155,35 +169,39 @@ public class Parser {
 			Statement statement = it1.next();
 			Resource subject = statement.getSubject();
 			Property predicate = statement.getPredicate();
-			RDFNode rdfNode = statement.getObject();
+			/*RDFNode rdfNode = statement.getObject();
 			if(rdfNode.isResource())
 			{
 				Resource object = rdfNode.asResource();
 			}else if(rdfNode.isLiteral())
 			{
 				Literal object = rdfNode.asLiteral();
-			}
+			}*/
 			Iterator<Statement>it2 = model2.listStatements();
 			while(it2.hasNext())
 			{
 				Statement statement2 = it2.next();
 				Resource subject2 = statement2.getSubject();
 				Property predicate2 = statement2.getPredicate();
-				RDFNode rdfNode2 = statement2.getObject();
+			/*	RDFNode rdfNode2 = statement2.getObject();
 				if(rdfNode2.isResource())
 				{
 					Resource object2 = rdfNode2.asResource();
 				}else if(rdfNode.isLiteral())
 				{
 					Literal object2 = rdfNode2.asLiteral();
-				}
+				} */
 				System.out.println("namespace:"+subject.getNameSpace());
 				System.out.println("id:"+subject.getId());
+				System.out.println("subject: ");
+				System.out.println(subject.getLocalName()+":"+subject2.getLocalName());
+				
 				if(subject.getURI().equals(subject2.getURI()))
 				{
 					System.out.println("subject: ");
 					System.out.println(subject.getLocalName()+":"+subject2.getLocalName());
 				}
+				
 				//if(predicate.getURI().equals(predicate2.getURI()))
 				//{
 					//System.out.println("predicate");
@@ -207,5 +225,22 @@ public class Parser {
 		 //parser.readOWL(args[0],args[3],args[4]);
 		 parser.readOWL(args[0],args[1],args[2],args[3],args[4]);
 		 //parser.readRDF(args[3],args[4]);
+		 
+
+		 String uri1 = "http://www.okkam.org/oaie/restaurant1-Restaurant0'";
+		 String uri2 ="http://www.okkam.org/oaie/restaurant2-Restaurant0";
+		 double simiratityScore = 0;
+		 String relation ="=";
+		 float measure = 1;
+		 simiratityScore = getSimilarityScore(uri1, uri2);
+		
+		 
+		 
+		 
+		 
+		 
+		 
+		
+		 
 	}
 }

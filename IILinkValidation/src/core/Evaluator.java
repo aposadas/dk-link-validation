@@ -6,16 +6,30 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 
+import com.wcohen.ss.JaroWinkler;
+import com.wcohen.ss.api.StringWrapper;
+
 
 
 /**
  * Skeleton for an evaluator of the type extraction
  */
 public class Evaluator {
+	
+	private  double getSimilarityScore (String uri1, String uri2){
+		double scoreSimilarity  = 0;
+		 StringWrapper stringWrapper1 = new JaroWinkler().prepare(uri1);
+		 StringWrapper stringWrapper2 = new JaroWinkler().prepare(uri2); 
+		 scoreSimilarity = new JaroWinkler().score(uri1,uri2);
+		 System.out.println("score: " + scoreSimilarity);	
+		String  scoreSimilarityExp = new JaroWinkler().explainScore(uri1,uri2);
+		System.out.println("Explain score: " + scoreSimilarityExp);
+		return  scoreSimilarity;
+	}
 
 
 	
-	public float calculateRecall(File results, File goldStandard) throws IOException
+	private float calculateRecall(File results, File goldStandard) throws IOException
 	{
 		float truePositive = 0;
 		float falseNegative = 0;
@@ -28,7 +42,7 @@ public class Evaluator {
 	}
 
 	
-	public float calculatePrecission(File results, File goldStandard) throws IOException
+	private float calculatePrecission(File results, File goldStandard) throws IOException
 	{
 		float truePositive = 0;
 		float falsePositive = 0;
@@ -40,7 +54,7 @@ public class Evaluator {
  	
 		return prescission;
 	}
-	public float calculateFMeasuare(double precission, double recall) throws IOException
+	private float calculateFMeasuare(double precission, double recall) throws IOException
 	{
 		float f1Score  = 0;
 		f1Score = 2*((float)(precission*recall)/(float)(precission+recall));
