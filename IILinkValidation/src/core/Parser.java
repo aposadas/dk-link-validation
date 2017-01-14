@@ -6,12 +6,37 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+
+
+
+import java.util.Set;
+
+import org.apache.jena.rdf.model.InfModel;
+import org.apache.jena.rdf.model.Literal;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.rdf.model.Property;
+import org.apache.jena.rdf.model.RDFNode;
+import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.rdf.model.Statement;
+import org.apache.jena.reasoner.Reasoner;
+import org.apache.jena.reasoner.ReasonerRegistry;
 import org.apache.jena.rdf.model.*;
 import org.apache.jena.util.FileManager;
 import org.semanticweb.owlapi.apibinding.OWLManager;
+import org.semanticweb.owlapi.model.IRI;
+import org.semanticweb.owlapi.model.OWLClass;
+import org.semanticweb.owlapi.model.OWLDataFactory;
+import org.semanticweb.owlapi.model.OWLNamedIndividual;
+import org.semanticweb.owlapi.model.OWLObjectProperty;
 import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.model.OWLOntologyCreationException;
 import org.semanticweb.owlapi.model.OWLOntologyManager;
+import org.semanticweb.owlapi.reasoner.Node;
+import org.semanticweb.owlapi.reasoner.NodeSet;
+import org.semanticweb.owlapi.reasoner.OWLReasoner;
+import org.semanticweb.owlapi.reasoner.OWLReasonerFactory;
+import org.semanticweb.owlapi.reasoner.structural.StructuralReasonerFactory;
 
 import com.wcohen.ss.api.*;
 import com.wcohen.ss.*;
@@ -37,51 +62,81 @@ public class Parser {
 		}
 	}
 
+	
+	public void readOWL(String owl1,String owl2, String owl3,String rdfPath1,String rdfPath2)
+	{
+		OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
+		OWLOntology ont,ont2,ont3,ont4,ont5;
+		try {
+			ont = manager.loadOntologyFromOntologyDocument(new File(owl1));
+			
+			ont2 = manager.loadOntologyFromOntologyDocument(new File(owl2));
+			ont3 = manager.loadOntologyFromOntologyDocument(new File(owl3));
+			ont4 = manager.loadOntologyFromOntologyDocument(new File(rdfPath1));
+			ont5 = manager.loadOntologyFromOntologyDocument(new File(rdfPath2));
+			System.out.println("before"+ont.getAxiomCount());
+			manager.addAxioms(ont, ont2.getAxioms());
+			manager.addAxioms(ont, ont3.getAxioms());
+			manager.addAxioms(ont, ont4.getAxioms());
+			manager.addAxioms(ont, ont5.getAxioms());
+			System.out.println("after"+ont.getAxiomCount());
+			OWLReasonerFactory reasonerFactory = new StructuralReasonerFactory();
+			OWLReasoner reasoner = reasonerFactory.createReasoner(ont);
+			reasoner.precomputeInferences();
+			boolean consistent = reasoner.isConsistent();
+			Node<OWLClass> bottomNode = reasoner.getUnsatisfiableClasses();
+			Set<OWLClass> unsatisfiable = bottomNode.getEntitiesMinusBottom();
+			if (!unsatisfiable.isEmpty()) {
+	            // System.out.println("The following classes are unsatisfiable: ");
+	            for (OWLClass cls : unsatisfiable) {
+	                 System.out.println(" " + cls);
+	            }
+	        } else {
+	             System.out.println("There are no unsatisfiable classes");
+	        }
+			OWLDataFactory fac = manager.getOWLDataFactory();
+			OWLClass adresses = fac.getOWLClass(IRI.create(
+					"http://www.okkam.org/ontology_restaurant2.owl#Restaurant"));
+			NodeSet<OWLClass> subClses = reasoner.getSubClasses(adresses, true);
+			Set<OWLClass> clses = subClses.getFlattened();
+	         for (OWLClass cls : clses) {
+	         System.out.println(" " + cls);
+			 }
+	         NodeSet<OWLNamedIndividual> individualsNodeSet = reasoner.getInstances(adresses, false);
+	         Set<OWLNamedIndividual> individuals = individualsNodeSet.getFlattened();
+	         for (OWLNamedIndividual ind : individuals) {
+	          System.out.println(" " + ind);
+	         }
+	         for (OWLNamedIndividual i : ont.getIndividualsInSignature()) {
+	             for (OWLObjectProperty p : ont.getObjectPropertiesInSignature()) {
+	                 NodeSet<OWLNamedIndividual> individualValues = reasoner.getObjectPropertyValues(i, p);
+	                 Set<OWLNamedIndividual> values = individualValues.getFlattened();
+	                  System.out.println("The property values for "+p+" for individual "+i+" are: ");
+	                  for (OWLNamedIndividual ind : values) {
+	                  System.out.println(" " + ind);
+	                  }
+	             }
+	 }
+	         Node<OWLClass> topNode = reasoner.getTopClassNode();
+	         //print(topNode, reasoner, 0);*/
+		} catch (OWLOntologyCreationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
 	private double getSimilarityScore (String uri1, String uri2){
 		StringWrapper stringWrapper1 = new JaroWinkler().prepare(uri1);
 		StringWrapper stringWrapper2 = new JaroWinkler().prepare(uri2);
 
-		double similarityScore = new JaroWinkler().score(stringWrapper1, stringWrapper2);
+		double similarityScore = new JaroWinkler().score(uri1,uri2);
 //		System.out.println("score: " + similarityScore);
 //		String scoreSimilarityExp = new JaroWinkler().explainScore(uri1,uri2);
 //		System.out.println("Explain score: " + scoreSimilarityExp);
 		return similarityScore;
 	}
 
-	public void readOWL(String owl1, String owl2, String owl3, String rdfPath1, String rdfPath2) {
-		OWLOntologyManager m = OWLManager.createOWLOntologyManager();
-		OWLOntology o;
-
-		try {
-			o = m.loadOntologyFromOntologyDocument(new File(owl1));
-			System.out.println(o != null ? "True" : "False");
-		}
-		catch (OWLOntologyCreationException e) {
- 			e.printStackTrace();
-		}
-		
-//		Model schema1 = FileManager.get().loadModel(owl1);
-//		Model schema2 = FileManager.get().loadModel(owl2);
-//		Model schema3 = FileManager.get().loadModel(owl3);
-//		
-//		Model data1 = FileManager.get().loadModel(rdfPath1);
-//		Model data2 = FileManager.get().loadModel(rdfPath2);
-//		Reasoner reasoner = ReasonerRegistry.getOWLReasoner();
-//		reasoner = reasoner.bindSchema(schema1);
-//		reasoner = reasoner.bindSchema(schema2);
-//		reasoner = reasoner.bindSchema(schema3);
-//		
-//		//InfModel infmodel = ModelFactory.createInfModel(reasoner, data1,data2);
-//		InfModel infmodel = ModelFactory.createInfModel(reasoner, data1);
-//		
-//		//infmodel.samePrefixMappingAs(arg0)
-//		infmodel.listStatements().forEachRemaining(s->sameAsFinder(s.toString()));
-//		//infmodel.listStatements().forEachRemaining(sd->System.out.println(sd.toString()));
-//		
-//		for (String line: listLinksSameAs){
-//			System.out.println(line);	
-//		}
-	}
+	
 	
 	/**
 	 * This method parses the rdf file and prints stuff.
@@ -137,7 +192,7 @@ public class Parser {
 		 parser.compareRDF(model_restaurant1, model_restaurant2);
 
 		//parser.readOWL(args[0],args[3],args[4]);
-		//parser.readOWL(args[0], args[1], args[2], args[3], args[4]);
+		parser.readOWL(args[0], args[1], args[2], args[3], args[4]);
 
 		String uri1 = "http://www.okkam.org/oaie/restaurant1-Restaurant0'";
 		String uri2 = "http://www.okkam.org/oaie/restaurant2-Restaurant0";
