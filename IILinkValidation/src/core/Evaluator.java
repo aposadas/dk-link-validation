@@ -14,14 +14,14 @@ import com.wcohen.ss.api.StringWrapper;
 public class Evaluator {
 
 	private double getSimilarityScore (String uri1, String uri2){
-		double scoreSimilarity  = 0;
 		StringWrapper stringWrapper1 = new JaroWinkler().prepare(uri1);
 		StringWrapper stringWrapper2 = new JaroWinkler().prepare(uri2);
-		scoreSimilarity = new JaroWinkler().score(uri1,uri2);
-		System.out.println("score: " + scoreSimilarity);
-		String  scoreSimilarityExp = new JaroWinkler().explainScore(uri1,uri2);
-		System.out.println("Explain score: " + scoreSimilarityExp);
-		return  scoreSimilarity;
+
+		double similarityScore = new JaroWinkler().score(uri1,uri2);
+//		System.out.println("score: " + similarityScore);
+//		String scoreSimilarityExp = new JaroWinkler().explainScore(uri1,uri2);
+//		System.out.println("Explain score: " + scoreSimilarityExp);
+		return similarityScore;
 	}
 	
 	private float calculateRecall(File results, File goldStandard) throws IOException {
