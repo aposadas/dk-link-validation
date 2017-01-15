@@ -161,8 +161,8 @@ public class Parser {
 	                          String result, double average, String explanation) {
 
 		printWriter.println("\t<map>\n\t\t<Cell>");
-		printWriter.println("\t\t\t<entity1 rdf:resource='" + inst1 + "'/>");
-		printWriter.println("\t\t\t<entity2 rdf:resource='" + inst2 + "'/>");
+		printWriter.println("\t\t\t<entity1 rdf:resource='" + inst1.toString().replace("<","").replace(">","") + "'/>");
+		printWriter.println("\t\t\t<entity2 rdf:resource='" + inst2.toString().replace("<","").replace(">","") + "'/>");
 		printWriter.println("\t\t\t<relation>" + result + "</relation>");
 		printWriter.println("\t\t\t<measure rdf:datatype='http://www.w3.org/2001/XMLSchema#float'>" + average + "</measure>");
 		printWriter.println("\t\t\t<explanation>" + explanation + "</explanation>");
