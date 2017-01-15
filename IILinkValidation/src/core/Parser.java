@@ -62,28 +62,21 @@ public class Parser {
 		manager.addAxioms(ont, ont4.getAxioms());
 		manager.addAxioms(ont, ont5.getAxioms());
 
-		PrintWriter printWriter = null;
 		File resultFile = new File("./resources/results/result.txt");
-		try {
-			printWriter = new PrintWriter(resultFile);
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		}
+		PrintWriter printWriter = initializeResultsFile(resultFile);
 
 		OWLReasonerFactory reasonerFactory = new StructuralReasonerFactory();
 		OWLReasoner reasoner = reasonerFactory.createNonBufferingReasoner(ont);
+		OWLDataFactory factory = manager.getOWLDataFactory();
 
-		OWLDataFactory fac = manager.getOWLDataFactory();
 		String[] classes = new String[] {owlClass};
-
 		int length = classes.length;
-
 		OWLClass[] classes1 = new OWLClass[length];
 		OWLClass[] classes2 = new OWLClass[length];
 
 		for(int i = 0; i < length; i++) {
-			classes1[i] = fac.getOWLClass(IRI.create(prefix1 + classes[i]));
-			classes2[i] = fac.getOWLClass(IRI.create(prefix2 + classes[i]));
+			classes1[i] = factory.getOWLClass(IRI.create(prefix1 + classes[i]));
+			classes2[i] = factory.getOWLClass(IRI.create(prefix2 + classes[i]));
 		}
 
 		Set<OWLNamedIndividual> instances1 = reasoner.getInstances(classes1[0], false).getFlattened();
@@ -98,6 +91,8 @@ public class Parser {
 					double count = 0.0;
 					double average = 0.0;
 
+					StringBuilder explanation = new StringBuilder();
+
 					for(OWLAnnotationAssertionAxiom oa1:list1) {
 						for(OWLAnnotationAssertionAxiom oa2:list2) {
 
@@ -107,31 +102,71 @@ public class Parser {
 							if(property1.equals(property2)){
 								count++;
 								average += getSimilarityScore(oa1.getValue().toString(), oa2.getValue().toString());
-								//printWriter.println(oa1.getValue().toString()+","+oa2.getValue().toString());
+								explanation.append(oa1.getValue().toString()).append(", ")
+										.append(oa2.getValue().toString()).append("\n");
 							}
 						}
 					}
 					
 					average = average / count;
 
-					if(average >= 0.9) {
-						printResults(printWriter, inst1, inst2, "=", average);
-					}
-					else {
-						printResults(printWriter, inst1, inst2, "!=", average);
-					}
+					String result = (average >= 0.9) ? "=" : "!=";
+					printResults(printWriter, inst1, inst2, result, average, explanation.toString());
 				}
 			}
 		}
+		finalizeResultsFile(printWriter);
+	}
+
+	private void finalizeResultsFile(PrintWriter printWriter) {
+		printWriter.println("</Alignment>\n" +
+				"</rdf:RDF>");
 		printWriter.close();
 	}
 
+	private PrintWriter initializeResultsFile(File resultFile) {
+		PrintWriter printWriter = null;
+		try {
+			printWriter = new PrintWriter(resultFile);
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+
+		// Add header to results file
+		String header = "<?xml version='1.0' encoding='utf-8' standalone='no'?> \n" +
+				"<rdf:RDF xmlns='http://knowledgeweb.semanticweb.org/heterogeneity/alignment#'\n" +
+				"\txmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'\n" +
+				"\txmlns:xsd='http://www.w3.org/2001/XMLSchema#'\n" +
+				"\txmlns:align='http://knowledgeweb.semanticweb.org/heterogeneity/alignment#'>\n" +
+				"<Alignment>\n" +
+				"\t<xml>yes</xml>\n" +
+				"\t<level>0</level>\n" +
+				"\t<type>**</type>\n" +
+				"\t<onto1>\n" +
+				"\t\t<Ontology>\n" +
+				"\t\t\t<location>null</location>\n" +
+				"\t\t</Ontology>\n" +
+				"\t</onto1>\n" +
+				"\t<onto2>\n" +
+				"\t\t<Ontology>\n" +
+				"\t\t\t<location>null</location>\n" +
+				"\t\t</Ontology>\n" +
+				"\t</onto2>\n";
+		printWriter.println(header);
+
+		return printWriter;
+	}
+
 	private void printResults(PrintWriter printWriter, OWLNamedIndividual inst1, OWLNamedIndividual inst2,
-	                          String result, double average) {
-		printWriter.println(inst1);
-		printWriter.println(inst2);
-		printWriter.println(result);
-		printWriter.println(average);
+	                          String result, double average, String explanation) {
+
+		printWriter.println("\t<map>\n\t\t<Cell>");
+		printWriter.println("\t\t\t<entity1 rdf:resource='" + inst1 + "'/>");
+		printWriter.println("\t\t\t<entity2 rdf:resource='" + inst2 + "'/>");
+		printWriter.println("\t\t\t<relation>" + result + "</relation>");
+		printWriter.println("\t\t\t<measure rdf:datatype='http://www.w3.org/2001/XMLSchema#float'>" + average + "</measure>");
+		printWriter.println("\t\t\t<explanation>" + explanation + "</explanation>");
+		printWriter.println("\t\t</Cell>\n\t</map>");
 	}
 
 	private double getSimilarityScore (String uri1, String uri2){

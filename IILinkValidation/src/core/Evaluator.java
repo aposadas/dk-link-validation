@@ -17,11 +17,7 @@ public class Evaluator {
 		StringWrapper stringWrapper1 = new JaroWinkler().prepare(uri1);
 		StringWrapper stringWrapper2 = new JaroWinkler().prepare(uri2);
 
-		double similarityScore = new JaroWinkler().score(stringWrapper1, stringWrapper2);
-//		System.out.println("score: " + similarityScore);
-//		String scoreSimilarityExp = new JaroWinkler().explainScore(uri1,uri2);
-//		System.out.println("Explain score: " + scoreSimilarityExp);
-		return similarityScore;
+		return new JaroWinkler().score(stringWrapper1, stringWrapper2);
 	}
 	
 	private float calculateRecall(File results, File goldStandard) throws IOException {
