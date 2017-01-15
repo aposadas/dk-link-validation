@@ -84,7 +84,7 @@ public class Parser {
 
 		for (OWLNamedIndividual inst1 : instances1) {
 			for (OWLNamedIndividual inst2 : instances2) {
-				if(inst1.toString().equals(inst2.toString().replace(prefixRdf2, prefixRdf1))) {
+				if(true) {
 					Set<OWLAnnotationAssertionAxiom> list1 = ont.getAnnotationAssertionAxioms(inst1.getIRI());
 					Set<OWLAnnotationAssertionAxiom> list2 = ont.getAnnotationAssertionAxioms(inst2.getIRI());
 
