@@ -43,9 +43,8 @@ public class Evaluator {
 		return precision;
 	}
 
-	public float calculateFMeasure(double precission, double recall) throws IOException {
-		float f1Score  = 0;
-		f1Score = 2*((float)(precission*recall)/(float)(precission+recall));
+	public float calculateFMeasure(double precision, double recall) throws IOException {
+		float f1Score = 2*((float)(precision*recall)/(float)(precision+recall));
 		
 		return f1Score;
 	}
