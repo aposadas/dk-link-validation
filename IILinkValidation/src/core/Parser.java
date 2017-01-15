@@ -1,7 +1,9 @@
 package core;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.InputStream;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -11,32 +13,23 @@ import java.util.List;
 
 import java.util.Set;
 
-import org.apache.jena.rdf.model.InfModel;
-import org.apache.jena.rdf.model.Literal;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
-import org.apache.jena.rdf.model.Property;
-import org.apache.jena.rdf.model.RDFNode;
-import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.Statement;
-import org.apache.jena.reasoner.Reasoner;
-import org.apache.jena.reasoner.ReasonerRegistry;
-import org.apache.jena.rdf.model.*;
 import org.apache.jena.util.FileManager;
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.model.IRI;
+import org.semanticweb.owlapi.model.OWLAnnotationAssertionAxiom;
 import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLDataFactory;
 import org.semanticweb.owlapi.model.OWLNamedIndividual;
-import org.semanticweb.owlapi.model.OWLObjectProperty;
 import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.model.OWLOntologyCreationException;
 import org.semanticweb.owlapi.model.OWLOntologyManager;
-import org.semanticweb.owlapi.reasoner.Node;
-import org.semanticweb.owlapi.reasoner.NodeSet;
 import org.semanticweb.owlapi.reasoner.OWLReasoner;
 import org.semanticweb.owlapi.reasoner.OWLReasonerFactory;
 import org.semanticweb.owlapi.reasoner.structural.StructuralReasonerFactory;
+
 
 import com.wcohen.ss.api.*;
 import com.wcohen.ss.*;
@@ -65,61 +58,94 @@ public class Parser {
 	
 	public void readOWL(String owl1,String owl2, String owl3,String rdfPath1,String rdfPath2)
 	{
+		File f2 = new File("./resources/results/result.txt");
+		PrintWriter printWriter;
 		OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
 		OWLOntology ont,ont2,ont3,ont4,ont5;
 		try {
+			printWriter = new PrintWriter(f2);
 			ont = manager.loadOntologyFromOntologyDocument(new File(owl1));
-			
 			ont2 = manager.loadOntologyFromOntologyDocument(new File(owl2));
 			ont3 = manager.loadOntologyFromOntologyDocument(new File(owl3));
 			ont4 = manager.loadOntologyFromOntologyDocument(new File(rdfPath1));
 			ont5 = manager.loadOntologyFromOntologyDocument(new File(rdfPath2));
-			System.out.println("before"+ont.getAxiomCount());
+
 			manager.addAxioms(ont, ont2.getAxioms());
 			manager.addAxioms(ont, ont3.getAxioms());
 			manager.addAxioms(ont, ont4.getAxioms());
 			manager.addAxioms(ont, ont5.getAxioms());
-			System.out.println("after"+ont.getAxiomCount());
+
+			OWLOntology ont6 = manager.loadOntologyFromOntologyDocument(new File(owl1));
 			OWLReasonerFactory reasonerFactory = new StructuralReasonerFactory();
-			OWLReasoner reasoner = reasonerFactory.createReasoner(ont);
-			reasoner.precomputeInferences();
-			boolean consistent = reasoner.isConsistent();
-			Node<OWLClass> bottomNode = reasoner.getUnsatisfiableClasses();
-			Set<OWLClass> unsatisfiable = bottomNode.getEntitiesMinusBottom();
-			if (!unsatisfiable.isEmpty()) {
-	            // System.out.println("The following classes are unsatisfiable: ");
-	            for (OWLClass cls : unsatisfiable) {
-	                 System.out.println(" " + cls);
-	            }
-	        } else {
-	             System.out.println("There are no unsatisfiable classes");
-	        }
+			OWLReasoner reasoner6 = reasonerFactory.createReasoner(ont6);
+			
+			OWLReasoner reasoner = reasonerFactory.createNonBufferingReasoner(ont);
+
 			OWLDataFactory fac = manager.getOWLDataFactory();
-			OWLClass adresses = fac.getOWLClass(IRI.create(
-					"http://www.okkam.org/ontology_restaurant2.owl#Restaurant"));
-			NodeSet<OWLClass> subClses = reasoner.getSubClasses(adresses, true);
-			Set<OWLClass> clses = subClses.getFlattened();
-	         for (OWLClass cls : clses) {
-	         System.out.println(" " + cls);
+			String prefix1="http://www.okkam.org/ontology_restaurant1.owl#";
+			String prefix2="http://www.okkam.org/ontology_restaurant2.owl#";
+			String prefixrdf1="http://www.okkam.org/oaie/restaurant1-";
+			String prefixrdf2="http://www.okkam.org/oaie/restaurant2-";
+			String[] classes = new String[] {"Restaurant"};			
+			
+
+			OWLClass[] classes1 = new OWLClass[classes.length];
+			OWLClass[] classes2 = new OWLClass[classes.length];
+			
+			
+			for(int i=0;i<classes.length;i++)
+			{
+				classes1[i]=fac.getOWLClass(IRI.create(prefix1+classes[i]));
+				classes2[i]=fac.getOWLClass(IRI.create(prefix2+classes[i]));
+			}
+			
+			 
+			 Set<OWLNamedIndividual> instances1 = reasoner.getInstances(classes1[0], false).getFlattened();
+			 Set<OWLNamedIndividual> instances2 = reasoner.getInstances(classes2[0], false).getFlattened();
+		     for (OWLNamedIndividual inst1 : instances1) {
+		    	 for (OWLNamedIndividual inst2 : instances2) {
+		    		 if(inst1.toString().equals(inst2.toString().replace(prefixrdf2, prefixrdf1)))
+		    		 {
+		    			 
+				    	 Set<OWLAnnotationAssertionAxiom> list1 = ont.getAnnotationAssertionAxioms(inst1.getIRI());
+				    	 Set<OWLAnnotationAssertionAxiom> list2 = ont.getAnnotationAssertionAxioms(inst2.getIRI());
+						 double count = 0.0;
+						 double average = 0.0;
+				    	 for(OWLAnnotationAssertionAxiom oa1:list1)
+						 {
+							 for(OWLAnnotationAssertionAxiom oa2:list2)
+							 {
+								 if(oa1.getProperty().toString().replace(prefix1, "").equals(oa2.getProperty().toString().replace(prefix2, ""))){
+									 count ++;
+									 average += getSimilarityScore(oa1.getValue().toString(),oa2.getValue().toString());
+									 //printWriter.println(oa1.getValue().toString()+","+oa2.getValue().toString());
+								 }
+							 }
+							
+						 }
+				    	 average = average / count;
+				    	 //printWriter.println(average);
+				    	 if(average>=0.9)
+				    	 {
+				    		 printWriter.println(inst1);
+				    		 printWriter.println(inst2);
+				    		 printWriter.println("=");
+				    	 }else
+				    	 {
+				    		 printWriter.println(inst1);
+				    		 printWriter.println(inst2);
+				    		 printWriter.println("!=");
+				    	 }
+		    		 }
+		    	 }
+		    	 
+		    	 
 			 }
-	         NodeSet<OWLNamedIndividual> individualsNodeSet = reasoner.getInstances(adresses, false);
-	         Set<OWLNamedIndividual> individuals = individualsNodeSet.getFlattened();
-	         for (OWLNamedIndividual ind : individuals) {
-	          System.out.println(" " + ind);
-	         }
-	         for (OWLNamedIndividual i : ont.getIndividualsInSignature()) {
-	             for (OWLObjectProperty p : ont.getObjectPropertiesInSignature()) {
-	                 NodeSet<OWLNamedIndividual> individualValues = reasoner.getObjectPropertyValues(i, p);
-	                 Set<OWLNamedIndividual> values = individualValues.getFlattened();
-	                  System.out.println("The property values for "+p+" for individual "+i+" are: ");
-	                  for (OWLNamedIndividual ind : values) {
-	                  System.out.println(" " + ind);
-	                  }
-	             }
-	 }
-	         Node<OWLClass> topNode = reasoner.getTopClassNode();
-	         //print(topNode, reasoner, 0);*/
+	         printWriter.close();
 		} catch (OWLOntologyCreationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
@@ -189,15 +215,15 @@ public class Parser {
 
 		 Model model_restaurant1 = parser.readRDF(args[3]);
 		 Model model_restaurant2 = parser.readRDF(args[4]);
-		 parser.compareRDF(model_restaurant1, model_restaurant2);
+		 //parser.compareRDF(model_restaurant1, model_restaurant2);
 
 		//parser.readOWL(args[0],args[3],args[4]);
 		parser.readOWL(args[0], args[1], args[2], args[3], args[4]);
 
-		String uri1 = "http://www.okkam.org/oaie/restaurant1-Restaurant0'";
+		String uri1 = "http://www.okkam.org/oaie/restaurant1-'";
 		String uri2 = "http://www.okkam.org/oaie/restaurant2-Restaurant0";
 
 		double similarityScore = parser.getSimilarityScore(uri1, uri2);
-		System.out.println("Similarity score = " + similarityScore);
+		//System.out.println("Similarity score = " + similarityScore);
 	}
 }
