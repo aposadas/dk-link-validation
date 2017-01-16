@@ -2,13 +2,10 @@ package core;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.InputStream;
 import java.io.PrintWriter;
 import java.util.Set;
 
-import org.apache.jena.rdf.model.Model;
-import org.apache.jena.rdf.model.ModelFactory;
-import org.apache.jena.util.FileManager;
+
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.model.IRI;
 import org.semanticweb.owlapi.model.OWLAnnotationAssertionAxiom;
@@ -44,24 +41,12 @@ public class Parser {
 	                                 String prefix1, String prefix2, String prefixRdf1, String prefixRdf2, String owlClass) {
 
 		OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
-		OWLOntology ont = null, ont2 = null, ont3 = null, ont4 = null, ont5 = null;
-
-		try {
-			ont = manager.loadOntologyFromOntologyDocument(new File(owlPath1));
-			ont2 = manager.loadOntologyFromOntologyDocument(new File(owlPath2));
-			ont3 = manager.loadOntologyFromOntologyDocument(new File(owlPath3));
-			ont4 = manager.loadOntologyFromOntologyDocument(new File(rdfPath1));
-			ont5 = manager.loadOntologyFromOntologyDocument(new File(rdfPath2));
-		}
-		catch (OWLOntologyCreationException e) {
+		OWLOntology ont = null;
+        try {
+			ont = fuseAxioms(manager,new File[]{new File(owlPath1),new File(owlPath2),new File(owlPath3),new File(rdfPath1),new File(rdfPath2)});
+		}catch (OWLOntologyCreationException e) {
 			e.printStackTrace();
 		}
-
-		manager.addAxioms(ont, ont2.getAxioms());
-		manager.addAxioms(ont, ont3.getAxioms());
-		manager.addAxioms(ont, ont4.getAxioms());
-		manager.addAxioms(ont, ont5.getAxioms());
-
 		File resultFile = new File("./resources/results/result.txt");
 		PrintWriter printWriter = initializeResultsFile(resultFile);
 
@@ -69,22 +54,18 @@ public class Parser {
 		OWLReasoner reasoner = reasonerFactory.createNonBufferingReasoner(ont);
 		OWLDataFactory factory = manager.getOWLDataFactory();
 
-		String[] classes = new String[] {owlClass};
-		int length = classes.length;
-		OWLClass[] classes1 = new OWLClass[length];
-		OWLClass[] classes2 = new OWLClass[length];
+		OWLClass class1 = factory.getOWLClass(IRI.create(prefix1 + owlClass));
+		OWLClass class2 = factory.getOWLClass(IRI.create(prefix2 + owlClass));
 
-		for(int i = 0; i < length; i++) {
-			classes1[i] = factory.getOWLClass(IRI.create(prefix1 + classes[i]));
-			classes2[i] = factory.getOWLClass(IRI.create(prefix2 + classes[i]));
-		}
 
-		Set<OWLNamedIndividual> instances1 = reasoner.getInstances(classes1[0], false).getFlattened();
-		Set<OWLNamedIndividual> instances2 = reasoner.getInstances(classes2[0], false).getFlattened();
+		Set<OWLNamedIndividual> instances1 = reasoner.getInstances(class1, false).getFlattened();
+		Set<OWLNamedIndividual> instances2 = reasoner.getInstances(class2, false).getFlattened();
 
+		
 		for (OWLNamedIndividual inst1 : instances1) {
 			for (OWLNamedIndividual inst2 : instances2) {
 				if(true) {
+					
 					Set<OWLAnnotationAssertionAxiom> list1 = ont.getAnnotationAssertionAxioms(inst1.getIRI());
 					Set<OWLAnnotationAssertionAxiom> list2 = ont.getAnnotationAssertionAxioms(inst2.getIRI());
 
@@ -118,6 +99,26 @@ public class Parser {
 		finalizeResultsFile(printWriter);
 	}
 
+	private OWLOntology fuseAxioms(OWLOntologyManager manager, File[] files) throws OWLOntologyCreationException
+	{
+		OWLOntology ont = null;
+		for(File f:files)
+		{
+			if(f.exists())
+			{
+				if(ont==null)
+				{
+					ont = manager.loadOntologyFromOntologyDocument(f);
+				}else
+				{
+					OWLOntology ont2 = manager.loadOntologyFromOntologyDocument(f);
+					manager.addAxioms(ont, ont2.getAxioms());
+					}
+			}
+		}
+		return ont;
+	}
+	
 	private void finalizeResultsFile(PrintWriter printWriter) {
 		printWriter.println("</Alignment>\n" +
 				"</rdf:RDF>");
@@ -176,39 +177,27 @@ public class Parser {
 		return new JaroWinkler().score(stringWrapper1, stringWrapper2);
 	}
 
-	/**
-	 * This method reads the rdf file.
-	 * @param rdfFilePath File Path
-	 *
-	 */
-	public Model readRDF(String rdfFilePath) {
-		// create an empty model
-		Model model = ModelFactory.createDefaultModel();
-
-		// use the FileManager to find the input file
-		InputStream in = FileManager.get().open(rdfFilePath);
-
-		// read the RDF/XML file
-		return model.read(in, null);
-	}
+	
 	
 	public static void main(String[] args) throws Exception {
+		/*String prefix1 = "http://www.okkam.org/ontology_person1.owl#";
+		String prefix2 = "http://www.okkam.org/ontology_person2.owl#";
+		String prefixRdf1 = "http://www.okkam.org/oaie/person1-";
+		String prefixRdf2 = "http://www.okkam.org/oaie/person2-";
+		String owlClass = "Person";
 		args = new String[] {
-		     "resources/PR-1/restaurants/ontology_restaurant.owl",
-			 "resources/PR-1/restaurants/ontology_restaurant1.owl",
-			 "resources/PR-1/restaurants/ontology_restaurant2.owl",
-			 "resources/PR-1/restaurants/restaurant1.rdf",
-			 "resources/PR-1/restaurants/restaurant2.rdf"
+		     "resources/PR-1/person2/ontology_people1.owl",
+			 "resources/PR-1/person2/ontology_people2.owl",
+			 "asdfasdf",
+			 "resources/PR-1/person2/person21.rdf",
+			 "resources/PR-1/person2/person22.rdf",
+			 prefix1, prefix2, prefixRdf1, prefixRdf2, owlClass
 			 };
 
-		String prefix1 = "http://www.okkam.org/ontology_restaurant1.owl#";
-		String prefix2 = "http://www.okkam.org/ontology_restaurant2.owl#";
-		String prefixRdf1 = "http://www.okkam.org/oaie/restaurant1-";
-		String prefixRdf2 = "http://www.okkam.org/oaie/restaurant2-";
-		String owlClass = "Restaurant";
+		*/
 
 		Parser parser = new Parser();
 		parser.compareOwlOntologies(args[0], args[1], args[2], args[3], args[4],
-				prefix1, prefix2, prefixRdf1, prefixRdf2, owlClass);
+				args[5], args[6], args[7], args[8], args[9]);
 	}
 }
